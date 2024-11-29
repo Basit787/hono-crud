@@ -11,8 +11,10 @@ app.get("/", (c) => {
 });
 
 const port = Number(process.env.PORT);
+
 console.log(`Server is running on http://localhost:${port}`);
 
+//defined routes
 app.route("/", routes);
 
 serve({
