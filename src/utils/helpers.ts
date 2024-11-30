@@ -6,24 +6,40 @@ config();
 
 //hashed password section
 export const HashedPassword = async (plainTextPassword: string) => {
-  const saltRound = 10;
-  return await bcrypt.hash(plainTextPassword, saltRound);
+  try {
+    const saltRound = 10;
+    return await bcrypt.hash(plainTextPassword, saltRound);
+  } catch (error) {
+    throw new Error(`Error while creating hash password : ${error}`);
+  }
 };
 
 export const compareHashPassword = async (
   hashPassword: string,
   userPassword: string
 ) => {
-  return await bcrypt.compare(hashPassword, userPassword);
+  try {
+    return await bcrypt.compare(hashPassword, userPassword);
+  } catch (error) {
+    throw new Error(`Error while comparing password : ${error}`);
+  }
 };
 
 //jwt token section
 const SECRET_KEY = process.env.SECRET_KEY!;
 
 export const createToken = (payload: object) => {
-  return jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
+  try {
+    return jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
+  } catch (error) {
+    throw new Error(`Error while creating token: ${error}`);
+  }
 };
 
 export const verifyToken = (token: string) => {
-  return jwt.verify(token, SECRET_KEY);
+  try {
+    return jwt.verify(token, SECRET_KEY);
+  } catch (error) {
+    throw new Error(`Error while verifying token: ${error}`);
+  }
 };

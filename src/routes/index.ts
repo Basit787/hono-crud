@@ -4,6 +4,7 @@ import { authRoutes } from "./authRoutes.js";
 
 const routes = new Hono();
 
-routes.route("/", authRoutes).route("/users", userRoutes);
+routes.route("/", authRoutes);
+routes.route("/users", userRoutes);
 
 export default routes;

@@ -1,10 +1,12 @@
 import type { Context } from "hono";
-import { authUser } from "../models/authModel.js";
+import { pool } from "../config/db.js";
 import { compareHashPassword, createToken } from "../utils/helpers.js";
 
 export const loginUser = async (c: Context) => {
   const { email, password } = await c.req.json();
-  const result = await authUser(email);
+  const result = await pool.query("SELECT * FROM users WHERE email=$1", [
+    email,
+  ]);
 
   //check that data is present or not
   if (result.rowCount === 0) return c.json({ error: "Invalid Email" }, 401);
