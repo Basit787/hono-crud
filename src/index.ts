@@ -1,7 +1,8 @@
 import { serve } from "@hono/node-server";
+import { config } from "dotenv";
 import { Hono } from "hono";
 import routes from "./routes/index.js";
-import { config } from "dotenv";
+import { createTable } from "./config/migrations/createTable.js";
 
 const app = new Hono();
 config();
@@ -9,6 +10,8 @@ config();
 app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
+
+createTable();
 
 const port = Number(process.env.PORT);
 

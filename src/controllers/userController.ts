@@ -70,7 +70,7 @@ export const updateUser = async (c: Context) => {
         updatedData.email,
         updatedData.age,
         hashedPassword,
-        updatedData.role,
+        (updatedData.role = "user"),
         id,
       ]
     );
