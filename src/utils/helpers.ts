@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import jwt from "jsonwebtoken";
 
 config();
+const SECRET_KEY = process.env.SECRET_KEY!;
 
 //hashed password section
 export const HashedPassword = async (plainTextPassword: string) => {
@@ -26,7 +27,6 @@ export const compareHashPassword = async (
 };
 
 //jwt token section
-const SECRET_KEY = process.env.SECRET_KEY!;
 
 export const createToken = (payload: object) => {
   try {

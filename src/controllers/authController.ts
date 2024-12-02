@@ -10,12 +10,10 @@ export const loginUser = async (c: Context) => {
 
   //check that data is present or not
   if (result.rowCount === 0) return c.json({ error: "Invalid Email" }, 401);
-
   const user = result.rows[0];
 
   //verify the user password with database password
   const validPassword = await compareHashPassword(password, user.password);
-
   if (!validPassword) return c.json({ error: "Invalid Password" }, 401);
 
   //if all credential is ok then create the token
