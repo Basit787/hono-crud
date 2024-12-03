@@ -6,7 +6,7 @@ import { purchaseRoutes } from "./purchaseRoute.js";
 
 const routes = new Hono();
 
-routes.route("/", authRoutes);
+routes.route("/login", authRoutes);
 routes.route("/users", userRoutes);
 routes.route("/products", productRoutes);
 routes.route("/purchase", purchaseRoutes);

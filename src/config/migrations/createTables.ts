@@ -19,7 +19,7 @@ export const createTables = async () => {
             CREATE TABLE IF NOT EXISTS products(
             id SERIAL PRIMARY KEY,
             name varchar(255) NOT NULL,
-            amount varchar(255) NOT NULL,
+            amount NUMERIC NOT NULL,
             quantity INT NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
             )
@@ -38,6 +38,7 @@ export const createTables = async () => {
         `);
 
     console.log("Tables created successfully");
+    // await pool.query("DROP TABLE products, orders");
   } catch (error) {
     throw new Error(`Error while creating users table : ${error}`);
   }

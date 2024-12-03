@@ -60,7 +60,7 @@ export const updateProduct = async (c: Context) => {
     if (result.rowCount === 0) {
       return c.json({ message: "Product not found" }, 404);
     }
-    return c.json({ message: "User updated successfully" }, 201);
+    return c.json({ message: "Product updated successfully" }, 201);
   } catch (error) {
     return c.json({ error: error }, 500);
   }
