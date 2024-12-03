@@ -35,19 +35,15 @@ export const purchaseProduct = async (c: Context) => {
 
     const user = await c.get("user");
 
-    const updateQuantity = await client.query(
+    await client.query(
       "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
       [quantity, productId]
     );
 
-    if (!updateQuantity) await client.query("ROLLBACK");
-
-    const placeOrder = await client.query(
+    await client.query(
       "INSERT INTO orders (userId, productId, quantity, totalPrice) VALUES ($1, $2, $3, $4) RETURNING *",
       [user.id, productId, quantity, totalPrice]
     );
-
-    if (!placeOrder) await client.query("ROLLBACK");
 
     await client.query("COMMIT");
 
