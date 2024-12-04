@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 config();
 const SECRET_KEY = process.env.SECRET_KEY!;
 
-//hashed password section
+//create hasgh password
 export const HashedPassword = async (plainTextPassword: string) => {
   try {
     const saltRound = 10;
@@ -15,6 +15,7 @@ export const HashedPassword = async (plainTextPassword: string) => {
   }
 };
 
+// compare the hash password
 export const compareHashPassword = async (
   hashPassword: string,
   userPassword: string
@@ -26,8 +27,7 @@ export const compareHashPassword = async (
   }
 };
 
-//jwt token section
-
+//create the jwt token
 export const createToken = (payload: object) => {
   try {
     return jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
@@ -36,6 +36,7 @@ export const createToken = (payload: object) => {
   }
 };
 
+//verify the jwt token
 export const verifyToken = (token: string) => {
   try {
     return jwt.verify(token, SECRET_KEY);

@@ -2,6 +2,7 @@ import type { Context } from "hono";
 import { pool } from "../config/db.js";
 import { ProductSchema, type ProductType } from "../zod/productSchema.js";
 
+//add products in db
 export const addProduct = async (c: Context) => {
   const productData: ProductType = await c.req.json();
   const { name, amount, quantity } = ProductSchema.parse(productData);
@@ -16,6 +17,7 @@ export const addProduct = async (c: Context) => {
   }
 };
 
+// get all products from db
 export const getAllProducts = async (c: Context) => {
   try {
     const result = await pool.query("SELECT * FROM products");
@@ -25,8 +27,9 @@ export const getAllProducts = async (c: Context) => {
   }
 };
 
+//get single products from db
 export const getSingleProduct = async (c: Context) => {
-  const [id] = c.req.param("id");
+  const id = c.req.param("id");
   try {
     const result = await pool.query("SELECT * FROM products WHERE id=$1", [id]);
     if (result.rowCount === 0) {
@@ -38,21 +41,23 @@ export const getSingleProduct = async (c: Context) => {
   }
 };
 
+//delete single products from db
 export const deleteProduct = async (c: Context) => {
-  const [id] = c.req.param("id");
+  const id = c.req.param("id");
   try {
     const result = await pool.query("DELETE FROM products WHERE id=$1", [id]);
     if (result.rowCount === 0) {
       return c.json({ message: "Product not found" }, 404);
     }
-    return c.json({ message: "User deleted successfully" }, 200);
+    return c.json({ message: "Product deleted successfully" }, 200);
   } catch (error) {
     return c.json({ error: error }, 500);
   }
 };
 
+//update single products in db
 export const updateProduct = async (c: Context) => {
-  const [id] = c.req.param("id");
+  const id = c.req.param("id");
   const productData: ProductType = await c.req.json();
   const { name, amount, quantity } = ProductSchema.parse(productData);
   try {

@@ -7,11 +7,11 @@ export const loginUser = async (c: Context) => {
   try {
     const userData: LoginType = await c.req.json();
     const { email, password } = LoginSchema.parse(userData);
+
+    //check that data is present or not
     const result = await pool.query("SELECT * FROM users WHERE email=$1", [
       email,
     ]);
-
-    //check that data is present or not
     if (result.rowCount === 0)
       return c.json({ error: `User not found with email : ${email}` }, 401);
     const user = result.rows[0];

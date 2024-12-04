@@ -4,7 +4,10 @@ import { z } from "zod";
 export const validate = (schema: z.ZodSchema) => {
   return async (c: Context, next: Next) => {
     try {
+      // acquire data from request
       const usersData = await c.req.json();
+
+      //parse the userdata, if no error occurs then it will move next step
       schema.parse(usersData);
       await next();
     } catch (error) {
