@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 config();
 const SECRET_KEY = process.env.SECRET_KEY!;
 
-//create hasgh password
+//create hash password
 export const HashedPassword = async (plainTextPassword: string) => {
   try {
     const saltRound = 10;

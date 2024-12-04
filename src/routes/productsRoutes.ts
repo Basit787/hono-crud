@@ -24,9 +24,9 @@ productRoutes.post(
 productRoutes.get("/:id", authMiddleware, getSingleProduct);
 productRoutes.delete("/:id", authMiddleware, isAdmin, deleteProduct);
 productRoutes.put(
-  "/:id", // endpoint
-  authMiddleware, // check either user is authenticate or not
-  isAdmin, // check either the the role is admin or not
-  validate(ProductSchema), // check the validations using validation middleware
-  updateProduct // controller
+  "/:id", 
+  authMiddleware,
+  isAdmin,
+  validate(ProductSchema), 
+  updateProduct 
 );

@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "migrate": "tsx src/config/migrations/createTables.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },

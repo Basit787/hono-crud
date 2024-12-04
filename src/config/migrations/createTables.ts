@@ -1,6 +1,6 @@
 import { pool } from "../db.js";
 
-export const createTables = async () => {
+const createTables = async () => {
   try {
     //users table
     await pool.query(`
@@ -40,3 +40,5 @@ export const createTables = async () => {
     throw new Error(`Error while creating users table : ${error}`);
   }
 };
+
+createTables();
