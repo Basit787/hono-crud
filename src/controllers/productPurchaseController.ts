@@ -1,15 +1,16 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
+import { PurchaseSchema, type PurchaseType } from "../zod/purchaseSchema.js";
 
 export const purchaseProduct = async (c: Context) => {
-  const { productId, quantity } = await c.req.json();
+  const purchaseData: PurchaseType = await c.req.json();
 
-  const client = await pool.connect();
+  const { productId, quantity } = PurchaseSchema.parse(purchaseData);
 
   try {
-    await client.query("BEGIN");
+    await pool.query("BEGIN");
 
-    const productResult = await client.query(
+    const productResult = await pool.query(
       "SELECT * FROM products WHERE id = $1",
       [productId]
     );
@@ -18,15 +19,6 @@ export const purchaseProduct = async (c: Context) => {
     }
     const product = productResult.rows[0];
 
-    if (quantity === 0) {
-      return c.json(
-        {
-          message: "Minimum 1 quantity should select to complete purchase",
-        },
-        400
-      );
-    }
-
     if (product.quantity < 0 || product.quantity < quantity) {
       return c.json({ error: "Product is out of stock" }, 400);
     }
@@ -34,28 +26,25 @@ export const purchaseProduct = async (c: Context) => {
     const totalPrice = quantity * product.amount;
 
     const user = await c.get("user");
-
-    await client.query(
+    await pool.query(
       "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
       [quantity, productId]
     );
 
-    await client.query(
+    await pool.query(
       "INSERT INTO orders (userId, productId, quantity, totalPrice) VALUES ($1, $2, $3, $4) RETURNING *",
       [user.id, productId, quantity, totalPrice]
     );
 
-    await client.query("COMMIT");
+    await pool.query("COMMIT");
 
     return c.json({
       message: "Order placed successfully",
       totalPrice: `$${totalPrice}`,
     });
   } catch (error) {
-    await client.query("ROLLBACK");
+    await pool.query("ROLLBACK");
     return c.json({ error: `Error while purchase: ${error}` }, 500);
-  } finally {
-    client.release();
   }
 };
 

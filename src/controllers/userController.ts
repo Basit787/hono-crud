@@ -1,6 +1,7 @@
 import type { Context } from "hono";
-import { HashedPassword } from "../utils/helpers.js";
 import { pool } from "../config/db.js";
+import { HashedPassword } from "../utils/helpers.js";
+import { UserSchema, type UserType } from "../zod/userSchema.js";
 
 //get all users
 export const getAllUsers = async (c: Context) => {
@@ -14,8 +15,10 @@ export const getAllUsers = async (c: Context) => {
 
 //create user
 export const registerUser = async (c: Context) => {
-  const { password, role = "user", ...user } = await c.req.json();
+  const userData: UserType = await c.req.json();
+  const { password, role, ...user } = UserSchema.parse(userData);
   const hashedPassword = await HashedPassword(password);
+
   try {
     const result = await pool.query(
       `INSERT INTO users (name, age, email, password,role)
@@ -24,7 +27,7 @@ export const registerUser = async (c: Context) => {
     );
     return c.json(result.rows[0], 201);
   } catch (error) {
-    return c.json({ error: error }, 500);
+    return c.json({ error: "Internal Server Error" + error }, 500);
   }
 };
 
@@ -57,7 +60,8 @@ export const deleteUser = async (c: Context) => {
 //update user
 export const updateUser = async (c: Context) => {
   const id = c.req.param("id");
-  const { password, ...updatedData } = await c.req.json();
+  const userData: UserType = await c.req.json();
+  const { password, ...updatedData } = UserSchema.parse(userData);
   const hashedPassword = await HashedPassword(password);
 
   try {
@@ -70,7 +74,7 @@ export const updateUser = async (c: Context) => {
         updatedData.email,
         updatedData.age,
         hashedPassword,
-        (updatedData.role = "user"),
+        updatedData.role,
         id,
       ]
     );
@@ -78,6 +82,6 @@ export const updateUser = async (c: Context) => {
       return c.json({ message: "User not found" }, 404);
     return c.json({ message: "User Updated Successfully" }, 201);
   } catch (error) {
-    return c.json({ error: error }, 500);
+    return c.json({ error: "Internal Server Error" + error }, 500);
   }
 };

@@ -1,8 +1,10 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
+import { ProductSchema, type ProductType } from "../zod/productSchema.js";
 
 export const addProduct = async (c: Context) => {
-  const { name, amount, quantity } = await c.req.json();
+  const productData: ProductType = await c.req.json();
+  const { name, amount, quantity } = ProductSchema.parse(productData);
   try {
     const result = await pool.query(
       "INSERT INTO products (name,amount,quantity) VALUES ($1,$2,$3) RETURNING *",
@@ -10,7 +12,7 @@ export const addProduct = async (c: Context) => {
     );
     return c.json({ message: result.rows[0] }, 201);
   } catch (error) {
-    return c.json({ error: error }, 500);
+    return c.json({ error: "Internal Server Error" + error }, 500);
   }
 };
 
@@ -51,7 +53,8 @@ export const deleteProduct = async (c: Context) => {
 
 export const updateProduct = async (c: Context) => {
   const [id] = c.req.param("id");
-  const { name, amount, quantity } = await c.req.json();
+  const productData: ProductType = await c.req.json();
+  const { name, amount, quantity } = ProductSchema.parse(productData);
   try {
     const result = await pool.query(
       "UPDATE products SET name=$1, amount=$2, quantity=$3 WHERE id = $4",
@@ -62,6 +65,6 @@ export const updateProduct = async (c: Context) => {
     }
     return c.json({ message: "Product updated successfully" }, 201);
   } catch (error) {
-    return c.json({ error: error }, 500);
+    return c.json({ error: "Internal Server Error" + error }, 500);
   }
 };
