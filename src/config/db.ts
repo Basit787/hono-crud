@@ -14,7 +14,7 @@ export const pool = new Pool({
 
 try {
   await pool.connect();
-  console.log("Connected to database");
 } catch (error) {
   console.log("failed to connect db", error);
+  throw new Error("failed to connect db" + error);
 }
