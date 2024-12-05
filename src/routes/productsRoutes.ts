@@ -24,9 +24,9 @@ productRoutes.post(
 productRoutes.get("/:id", authMiddleware, getSingleProduct);
 productRoutes.delete("/:id", authMiddleware, isAdmin, deleteProduct);
 productRoutes.put(
-  "/:id", 
+  "/:id",
   authMiddleware,
   isAdmin,
-  validate(ProductSchema), 
-  updateProduct 
+  validate(ProductSchema),
+  updateProduct
 );

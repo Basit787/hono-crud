@@ -22,8 +22,8 @@ export const loginUser = async (c: Context) => {
 
     //if all credential is ok then create the token
     const token = createToken({
-      id: user.id,
-      username: user.username,
+      id: user.user_id,
+      username: user.name,
       role: user.role,
     });
 
