@@ -48,10 +48,15 @@ export const purchaseProduct = async (c: Context) => {
     //update the quantity in products
 
     for (let i = 0; i < userQuantity.length; i++) {
-      await pool.query(
-        "UPDATE products SET quantity = quantity - $1 WHERE product_id = $2",
-        [userQuantity[i], productIds[i]]
-      );
+      try {
+        await pool.query(
+          "UPDATE products SET quantity = quantity - $1 WHERE product_id = $2",
+          [userQuantity[i], productIds[i]]
+        );
+      } catch (error) {
+        await pool.query("ROLLBACK");
+        return c.json({ error: error }, 400);
+      }
     }
 
     //placeorder if all above data is ok
