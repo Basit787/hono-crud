@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
 import { HashedPassword } from "../utils/helpers.js";
-import { UserSchema, type UserType } from "../zod/userSchema.js";
+import type { UserType } from "../zod/userSchema.js";
 
 //get all users
 export const getAllUsers = async (c: Context) => {
@@ -15,8 +15,7 @@ export const getAllUsers = async (c: Context) => {
 
 //create user
 export const registerUser = async (c: Context) => {
-  const userData: UserType = await c.req.json();
-  const { password, role, ...user } = UserSchema.parse(userData);
+  const { password, role, ...user }: UserType = await c.req.json();
   const hashedPassword = await HashedPassword(password);
 
   try {
@@ -60,8 +59,7 @@ export const deleteUser = async (c: Context) => {
 //update user
 export const updateUser = async (c: Context) => {
   const id = c.req.param("id");
-  const userData: UserType = await c.req.json();
-  const { password, ...updatedData } = UserSchema.parse(userData);
+  const { password, ...updatedData }: UserType = await c.req.json();
   const hashedPassword = await HashedPassword(password);
 
   try {

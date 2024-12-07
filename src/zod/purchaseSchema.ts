@@ -7,6 +7,7 @@ const PurchaseSchema = z.object({
 
 export const PurchaseItem = z
   .array(PurchaseSchema)
-  .min(1, { message: "Add atleast one product to purchase your order" });
+  .min(1, { message: "Add atleast one product to purchase your order" })
+  .default([]);
 
 export type PurchaseType = z.infer<typeof PurchaseItem>;

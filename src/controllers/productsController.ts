@@ -1,11 +1,10 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
-import { ProductSchema, type ProductType } from "../zod/productSchema.js";
+import type { ProductType } from "../zod/productSchema.js";
 
 //add products in db
 export const addProduct = async (c: Context) => {
-  const productData: ProductType = await c.req.json();
-  const { name, amount, quantity } = ProductSchema.parse(productData);
+  const { name, amount, quantity }: ProductType = await c.req.json();
   try {
     const result = await pool.query(
       "INSERT INTO products (name,amount,quantity) VALUES ($1,$2,$3) RETURNING *",
@@ -31,7 +30,10 @@ export const getAllProducts = async (c: Context) => {
 export const getSingleProduct = async (c: Context) => {
   const id = c.req.param("id");
   try {
-    const result = await pool.query("SELECT * FROM products WHERE product_id=$1", [id]);
+    const result = await pool.query(
+      "SELECT * FROM products WHERE product_id=$1",
+      [id]
+    );
     if (result.rowCount === 0) {
       return c.json({ message: "Product not found" }, 404);
     }
@@ -45,7 +47,10 @@ export const getSingleProduct = async (c: Context) => {
 export const deleteProduct = async (c: Context) => {
   const id = c.req.param("id");
   try {
-    const result = await pool.query("DELETE FROM products WHERE product_id=$1", [id]);
+    const result = await pool.query(
+      "DELETE FROM products WHERE product_id=$1",
+      [id]
+    );
     if (result.rowCount === 0) {
       return c.json({ message: "Product not found" }, 404);
     }
@@ -58,8 +63,7 @@ export const deleteProduct = async (c: Context) => {
 //update single products in db
 export const updateProduct = async (c: Context) => {
   const id = c.req.param("id");
-  const productData: ProductType = await c.req.json();
-  const { name, amount, quantity } = ProductSchema.parse(productData);
+  const { name, amount, quantity }: ProductType = await c.req.json();
   try {
     const result = await pool.query(
       "UPDATE products SET name=$1, amount=$2, quantity=$3 WHERE product_id = $4",

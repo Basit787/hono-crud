@@ -1,79 +1,75 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
-import { PurchaseItem, type PurchaseType } from "../zod/purchaseSchema.js";
-import { error } from "console";
+import type { PurchaseType } from "../zod/purchaseSchema.js";
 
 export const purchaseProduct = async (c: Context) => {
-  const purchaseData: PurchaseType = await c.req.json();
-  const items = PurchaseItem.parse(purchaseData);
+  const items: PurchaseType = await c.req.json();
 
   try {
     await pool.query("BEGIN");
     const user = c.get("user");
-    let totalPrice = 0;
 
-    for (const item of items) {
-      //iterate all the item to check either item is present or not
-      const productData = await pool.query(
-        `SELECT * FROM products WHERE product_id = $1`,
-        [item.productId]
-      );
+    const productIds = items.map((item) => item.productId);
+    const userQuantity = items.map((item) => item.quantity);
 
-      //throw error if not product found
-      if (productData.rowCount === 0) {
-        await pool.query("ROLLBACK");
-        return c.json({ error: `Product ${item.productId} not found` }, 500);
-      }
+    const products = await pool.query(
+      `SELECT * FROM products WHERE product_id = ANY($1)`,
+      [productIds]
+    );
+    const productData = products.rows;
+    const actualQuantity = productData.map((i) => Number(i.quantity));
 
-      const product = productData.rows[0];
-
-      const productQuantity = Number(product.quantity);
-      if (productQuantity < item.quantity || productQuantity <= 0) {
-        return c.json(
-          {
-            error: `Product out of stock ${item.productId}`,
-          },
-          400
-        );
-      }
-
-      totalPrice += Number(product.amount * item.quantity);
-
-      await pool.query(
-        "UPDATE products SET quantity = quantity - $1 WHERE product_id = $2",
-        [item.quantity, product.product_id]
-      );
+    //chech either product is present or not in db
+    if (productData.length !== productIds.length) {
+      await pool.query("ROLLBACK");
+      return c.json({ error: "Product not found" }, 400);
     }
 
-    //add the userid and amount to create the order
-    const createOrder = await pool.query(
-      "INSERT INTO orders (user_id,totalPrice) VALUES($1,$2) RETURNING order_id",
+    //Check either purchase quantity is less or equal than actual quantity
+    const availableQuantity = !userQuantity.every(
+      (value, index) => value <= actualQuantity[index]
+    );
+
+    //check either the product quantity is zero or not
+    const outOfStock =
+      actualQuantity.filter((item) => item !== 0).length !==
+      userQuantity.length;
+
+    if (availableQuantity || outOfStock) {
+      await pool.query("ROLLBACK");
+      return c.json({ message: "Product Out of stock" }, 409); // 409 indicates the request conflicts with the current state of the resource.
+    }
+
+    //get total price
+    const totalPrice = productData
+      .map((num, index) => Number(num.amount) * userQuantity[index])
+      .reduce((acc, em) => acc + em);
+
+    //!update the quantity in products
+    const updateQuantity = userQuantity.map(async (item, index) => {
+      await pool.query(
+        "UPDATE products SET quantity = quantity- $1 WHERE product_id = $2",
+        [item, productIds[index]]
+      );
+    });
+
+    console.log("fvh", updateQuantity);
+
+    //placeorder if all above data is ok
+    const placeOrder = await pool.query(
+      "INSERT INTO orders (user_id,totalPrice) VALUES ($1,$2) RETURNING *",
       [user.id, totalPrice]
     );
 
-    const createOrderId = createOrder.rows[0].order_id;
+    if (!placeOrder) return c.json({ error: "Failed to place order" }, 400);
 
-    //iterate items form array
-    for (const item of items) {
-      await pool.query(
-        "INSERT INTO orders_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
-        [createOrderId, item.productId, item.quantity, totalPrice]
-      );
-    }
+    const orderId = placeOrder.rows[0].order_id;
 
-    if (createOrder.rowCount === 0) {
-      return c.json({ error: "Failed to place order" });
-    }
-
-    await pool.query("COMMIT");
-    return c.json({
-      message: "Order placed successfully",
-      totalPrice,
-      createOrderId,
-    });
+    // await pool.query("COMMIT");
+    return c.json({ message: "Order place successfully", orderId, totalPrice });
   } catch (error) {
     await pool.query("ROLLBACK");
-    return c.json({ message: "Failed to place order", error: error }, 500);
+    return c.json({ message: "Failed to place order", error: error }, 400);
   }
 };
 
@@ -113,8 +109,6 @@ export const getUserOrders = async (c: Context) => {
       [ordersResult.rows.map((order) => order.order_id)]
     );
 
-    console.log("absvfd", orderItems);
-
     const ordersWithItems = ordersResult.rows.map((order) => ({
       ...order,
       items: orderItems.rows.filter((item) => item.order_id === order.order_id),
@@ -150,8 +144,6 @@ export const getAdminOrders = async (c: Context) => {
       return c.json({ error: "No orders found" }, 200);
     }
 
-    const orderIds = ordersResult.rows.map((order) => order.order_id);
-
     const orderItems = await pool.query(
       `
       SELECT 
@@ -165,7 +157,7 @@ export const getAdminOrders = async (c: Context) => {
       JOIN products p ON oi.product_id = p.product_id
       WHERE oi.order_id = ANY($1)
       `,
-      [orderIds]
+      [ordersResult.rows.map((order) => order.order_id)]
     );
 
     const ordersWithItems = ordersResult.rows.map((order) => ({

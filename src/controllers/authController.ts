@@ -1,12 +1,11 @@
 import type { Context } from "hono";
 import { pool } from "../config/db.js";
 import { compareHashPassword, createToken } from "../utils/helpers.js";
-import { LoginSchema, type LoginType } from "../zod/loginSchema.js";
+import type { LoginType } from "../zod/loginSchema.js";
 
 export const loginUser = async (c: Context) => {
   try {
-    const userData: LoginType = await c.req.json();
-    const { email, password } = LoginSchema.parse(userData);
+    const { email, password }: LoginType = await c.req.json();
 
     //check that data is present or not
     const result = await pool.query("SELECT * FROM users WHERE email=$1", [
