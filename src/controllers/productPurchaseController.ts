@@ -45,15 +45,14 @@ export const purchaseProduct = async (c: Context) => {
       .map((num, index) => Number(num.amount) * userQuantity[index])
       .reduce((acc, em) => acc + em);
 
-    //!update the quantity in products
-    const updateQuantity = userQuantity.map(async (item, index) => {
-      await pool.query(
-        "UPDATE products SET quantity = quantity- $1 WHERE product_id = $2",
-        [item, productIds[index]]
-      );
-    });
+    //update the quantity in products
 
-    console.log("fvh", updateQuantity);
+    for (let i = 0; i < userQuantity.length; i++) {
+      await pool.query(
+        "UPDATE products SET quantity = quantity - $1 WHERE product_id = $2",
+        [userQuantity[i], productIds[i]]
+      );
+    }
 
     //placeorder if all above data is ok
     const placeOrder = await pool.query(
@@ -65,8 +64,11 @@ export const purchaseProduct = async (c: Context) => {
 
     const orderId = placeOrder.rows[0].order_id;
 
-    // await pool.query("COMMIT");
-    return c.json({ message: "Order place successfully", orderId, totalPrice });
+    await pool.query("COMMIT");
+    return c.json(
+      { message: "Order place successfully", orderId, totalPrice },
+      201
+    );
   } catch (error) {
     await pool.query("ROLLBACK");
     return c.json({ message: "Failed to place order", error: error }, 400);
