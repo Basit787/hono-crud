@@ -2,7 +2,7 @@ import { pool } from "../db.js";
 
 const createTables = async () => {
   try {
-    //users table
+    // users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         user_id SERIAL PRIMARY KEY,
@@ -20,7 +20,7 @@ const createTables = async () => {
         product_id SERIAL PRIMARY KEY,
         name varchar(255) NOT NULL,
         amount NUMERIC(10,2) NOT NULL,
-        quantity NUMERIC(10,2) NOT NULL CHECK (quantity > 0),
+        quantity NUMERIC(10,2) NOT NULL CHECK (quantity >= 0),
         created_at TIMESTAMP DEFAULT NOW()
       )`);
 
