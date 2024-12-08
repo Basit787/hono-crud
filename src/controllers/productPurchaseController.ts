@@ -2,6 +2,15 @@ import type { Context } from "hono";
 import { pool } from "../config/db.js";
 import type { PurchaseType } from "../zod/purchaseSchema.js";
 
+interface Item {
+  item_id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  price: number;
+  created_at: Date;
+}
+
 export const purchaseProduct = async (c: Context) => {
   const items: PurchaseType = await c.req.json();
 
@@ -9,15 +18,22 @@ export const purchaseProduct = async (c: Context) => {
     await pool.query("BEGIN");
     const user = c.get("user");
 
-    const productIds = items.map((item) => item.productId);
-    const userQuantity = items.map((item) => item.quantity);
+    const productIds = items.map(
+      (item: { productId: number }) => item.productId
+    );
+    const userQuantity = items.map(
+      (item: { quantity: number }) => item.quantity
+    );
 
     const products = await pool.query(
       `SELECT * FROM products WHERE product_id = ANY($1)`,
       [productIds]
     );
+
     const productData = products.rows;
-    const actualQuantity = productData.map((i) => Number(i.quantity));
+    const actualQuantity = productData.map((item: { quantity: number }) =>
+      Number(item.quantity)
+    );
 
     //chech either product is present or not in db
     if (productData.length !== productIds.length) {
@@ -27,12 +43,12 @@ export const purchaseProduct = async (c: Context) => {
 
     //Check either purchase quantity is less or equal than actual quantity
     const availableQuantity = !userQuantity.every(
-      (value, index) => value <= actualQuantity[index]
+      (value: number, index: number) => value <= actualQuantity[index]
     );
 
     //check either the product quantity is zero or not
     const outOfStock =
-      actualQuantity.filter((item) => item !== 0).length !==
+      actualQuantity.filter((item: number) => item !== 0).length !==
       userQuantity.length;
 
     if (availableQuantity || outOfStock) {
@@ -42,11 +58,14 @@ export const purchaseProduct = async (c: Context) => {
 
     //get total price
     const totalPrice = productData
-      .map((num, index) => Number(num.amount) * userQuantity[index])
-      .reduce((acc, em) => acc + em);
+      .map(
+        (item: { amount: number }, index: number) =>
+          item.amount * userQuantity[index]
+      )
+      .reduce((acc: number, em: number) => acc + em);
 
     //update the quantity in products
-    for (let i = 0; i < userQuantity.length; i++) {
+    for (let i: number = 0; i < userQuantity.length; i++) {
       try {
         await pool.query(
           "UPDATE products SET quantity = quantity - $1 WHERE product_id = $2",
@@ -69,12 +88,17 @@ export const purchaseProduct = async (c: Context) => {
     const orderId = placeOrder.rows[0].order_id;
 
     //get the product_ids for each item
-    const product_id = productData.map((item) => item.product_id);
+    const product_id = productData.map(
+      (item: { product_id: number }) => item.product_id
+    );
 
     //get the price for each item based on quantity
-    const productPrice = productData.map((item) => Number(item.amount));
+    const productPrice = productData.map((item: { amount: number }): number =>
+      Number(item.amount)
+    );
+
     const eachProductPrice = productPrice.map(
-      (item, index) => item * userQuantity[index]
+      (item: number, index: number) => item * userQuantity[index]
     );
 
     // now add the items in that particular order
@@ -85,7 +109,10 @@ export const purchaseProduct = async (c: Context) => {
       [orderId, product_id, userQuantity, eachProductPrice]
     );
 
-    console.log("The insert items are ", insertItems);
+    if (insertItems.rowCount === 0) {
+      await pool.query("ROLLBACK");
+      return c.json({ error: "Failed to insert the items" }, 400);
+    }
     await pool.query("COMMIT");
     return c.json(
       { message: "Order place successfully", orderId, totalPrice },
@@ -104,10 +131,10 @@ export const getUserOrders = async (c: Context) => {
     const ordersResult = await pool.query(
       `
       SELECT 
-        o.order_id,
-        o.user_id,
-        o.totalprice,
-        o.created_at
+      o.order_id,
+      o.user_id,
+      o.totalprice,
+      o.created_at
       FROM orders o
       WHERE o.user_id = $1
     `,
@@ -115,7 +142,11 @@ export const getUserOrders = async (c: Context) => {
     );
 
     if (ordersResult.rowCount === 0)
-      return c.json({ error: "Order Not Found" }, 404);
+      return c.json({ error: "Failed to get items" }, 400);
+
+    const orderId = ordersResult.rows.map(
+      (order: { order_id: number }) => order.order_id
+    );
 
     const orderItems = await pool.query(
       `
@@ -128,14 +159,19 @@ export const getUserOrders = async (c: Context) => {
           p.amount as product_price
         FROM orders_items oi
         JOIN products p ON oi.product_id = p.product_id
-        WHERE oi.order_id = ANY($1)
+        WHERE oi.order_id IN (SELECT unnest($1::integer[]))
       `,
-      [ordersResult.rows.map((order) => order.order_id)]
+      [orderId]
     );
 
-    const ordersWithItems = ordersResult.rows.map((order) => ({
+    if (orderItems.rowCount === 0)
+      return c.json({ error: "Failed to get items" }, 400);
+
+    const ordersWithItems = ordersResult.rows.map((order: Item) => ({
       ...order,
-      items: orderItems.rows.filter((item) => item.order_id === order.order_id),
+      items: orderItems.rows.filter(
+        (item: { order_id: number }) => item.order_id === order.order_id
+      ),
     }));
 
     return c.json({ orders: ordersWithItems }, 200);
@@ -165,11 +201,13 @@ export const getAdminOrders = async (c: Context) => {
       `
     );
 
-    console.log(ordersResult.rows);
-
     if (ordersResult.rowCount === 0) {
       return c.json({ error: "No orders found" }, 200);
     }
+
+    const orderId = ordersResult.rows.map(
+      (order: { order_id: number }) => order.order_id
+    );
 
     const orderItems = await pool.query(
       `
@@ -182,14 +220,16 @@ export const getAdminOrders = async (c: Context) => {
         p.amount AS product_price
       FROM orders_items oi
       JOIN products p ON oi.product_id = p.product_id
-      WHERE oi.order_id = ANY($1)
+      WHERE oi.order_id IN (SELECT unnest($1::integer[]))
       `,
-      [ordersResult.rows.map((order) => order.order_id)]
+      [orderId]
     );
 
-    const ordersWithItems = ordersResult.rows.map((order) => ({
+    const ordersWithItems = ordersResult.rows.map((order: Item) => ({
       ...order,
-      items: orderItems.rows.filter((item) => item.order_id === order.order_id),
+      items: orderItems.rows.filter(
+        (item: { order_id: number }) => item.order_id === order.order_id
+      ),
     }));
 
     return c.json({ orders: ordersWithItems }, 200);
