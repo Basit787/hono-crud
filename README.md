@@ -1,10 +1,10 @@
 ### 1. Setting up environment variables
 
-Copy contents from `.env.sample` and creaet and add into `.env`
+Copy contents from `.env.sample`, now create and add the copied content in `.env`
 
 ### 2. Run database
 
-Run following command ro run the database locally.
+Run following command ro run the database locally. Make sure that docker is installed in your local machine
 
 ```bash
 docker compose up

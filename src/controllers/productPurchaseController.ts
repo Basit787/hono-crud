@@ -46,7 +46,6 @@ export const purchaseProduct = async (c: Context) => {
       .reduce((acc, em) => acc + em);
 
     //update the quantity in products
-
     for (let i = 0; i < userQuantity.length; i++) {
       try {
         await pool.query(
@@ -69,6 +68,24 @@ export const purchaseProduct = async (c: Context) => {
 
     const orderId = placeOrder.rows[0].order_id;
 
+    //get the product_ids for each item
+    const product_id = productData.map((item) => item.product_id);
+
+    //get the price for each item based on quantity
+    const productPrice = productData.map((item) => Number(item.amount));
+    const eachProductPrice = productPrice.map(
+      (item, index) => item * userQuantity[index]
+    );
+
+    // now add the items in that particular order
+    const insertItems = await pool.query(
+      `INSERT INTO orders_items(order_id, product_id, quantity, price) 
+   SELECT $1, UNNEST($2::integer[]), UNNEST($3::integer[]), UNNEST($4::numeric[])
+   RETURNING *`,
+      [orderId, product_id, userQuantity, eachProductPrice]
+    );
+
+    console.log("The insert items are ", insertItems);
     await pool.query("COMMIT");
     return c.json(
       { message: "Order place successfully", orderId, totalPrice },
@@ -125,7 +142,7 @@ export const getUserOrders = async (c: Context) => {
   } catch (error) {
     return c.json(
       { error: "Error while fetching orders", details: error },
-      500
+      400
     );
   }
 };
@@ -141,11 +158,14 @@ export const getAdminOrders = async (c: Context) => {
         o.totalprice,
         o.created_at,
         u.name AS user_name,
-        u.email AS user_email,
+        u.email AS user_email
+        
       FROM orders o
       JOIN users u ON o.user_id = u.user_id;
       `
     );
+
+    console.log(ordersResult.rows);
 
     if (ordersResult.rowCount === 0) {
       return c.json({ error: "No orders found" }, 200);
@@ -176,7 +196,7 @@ export const getAdminOrders = async (c: Context) => {
   } catch (error) {
     return c.json(
       { error: "Error while fetching orders", details: error },
-      500
+      400
     );
   }
 };
