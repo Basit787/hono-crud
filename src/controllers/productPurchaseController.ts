@@ -2,15 +2,6 @@ import type { Context } from "hono";
 import { pool } from "../config/db.js";
 import type { PurchaseType } from "../zod/purchaseSchema.js";
 
-interface Item {
-  item_id: number;
-  order_id: number;
-  product_id: number;
-  quantity: number;
-  price: number;
-  created_at: Date;
-}
-
 export const purchaseProduct = async (c: Context) => {
   const items: PurchaseType = await c.req.json();
 
