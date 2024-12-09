@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import {
-  getAdminOrders,
-  getUserOrders,
+  adminOrdersController,
   purchaseProduct,
+  userOrdersController,
 } from "../controllers/productPurchaseController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { isAdmin } from "../middleware/roleMiddleware.js";
@@ -17,5 +17,10 @@ purchaseRoutes.post(
   validate(PurchaseItem),
   purchaseProduct
 );
-purchaseRoutes.get("/userOrders", authMiddleware, getUserOrders);
-purchaseRoutes.get("/getAllOrders", authMiddleware, isAdmin, getAdminOrders);
+purchaseRoutes.get("/userOrders", authMiddleware, userOrdersController);
+purchaseRoutes.get(
+  "/getAllOrders",
+  authMiddleware,
+  isAdmin,
+  adminOrdersController
+);
